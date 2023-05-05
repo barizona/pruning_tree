@@ -504,8 +504,10 @@ p <- tree_tab_plotting %>%
   theme_minimal()
 
 # saving the plot to png and pdf
-ggsave(plot = p, filename = "branch_length_nr_of_tips.png")
-ggsave(plot = p, filename = "branch_length_nr_of_tips.pdf")
+ggsave(plot = p, filename = "branch_length_nr_of_tips.png",
+       width = 6.27, height = 3.77)
+ggsave(plot = p, filename = "branch_length_nr_of_tips.pdf",
+       width = 6.27, height = 3.77)
 
 #xxxxxx
 # * Histogram of branch lengths ----
@@ -521,8 +523,10 @@ p <- tree_tab %>%
   theme_minimal()
 
 # saving the plot to png and pdf
-ggsave(plot = p, filename = "branch_length_distribution.png")
-ggsave(plot = p, filename = "branch_length_distribution.pdf")
+ggsave(plot = p, filename = "branch_length_distribution.png",
+       width = 6.27, height = 3.77)
+ggsave(plot = p, filename = "branch_length_distribution.pdf",
+       width = 6.27, height = 3.77)
 
 #xxxxxx
 # * Tree plot ----

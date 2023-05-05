@@ -553,7 +553,7 @@ ggsave(plot = p, filename = "original_vs_pruned_tree.pdf",
 #xxxxxxxxxxxxxxxxxxxxxxxx
 # * Comparing the original and the pruned tree ----
 #xxxxxxxxxxxxxxxxxxxxxxxx
-capture.output(comparePhylo(original_tree, pruned_tree), sessionInfo()) %>% 
+capture.output(comparePhylo(original_tree, pruned_tree_r2t), sessionInfo()) %>% 
   writeLines(., "tree_pruning.log")
 
 quit(save = "yes")

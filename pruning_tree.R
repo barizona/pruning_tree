@@ -101,7 +101,7 @@ unlink(c(".RData",
          "branch_length_nr_of_tips.png",
          "branch_length_nr_of_tips.pdf",
          "branch_length_distribution.png",
-         "branch_length_distribution.png",
+         "branch_length_distribution.pdf",
          "original_vs_pruned_tree.png",
          "original_vs_pruned_tree.pdf",
          "tree_pruning.log"))

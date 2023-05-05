@@ -91,7 +91,7 @@ if (!interactive()) {
   opt  <- parse_args(opt_parser)
 } else {
   opt  <- parse_args(opt_parser)
-  opt$dir <- "../Main_STs_results/ST73/fasttree/"
+  opt$dir <- "../../Main_STs_results/ST73/fasttree/"
   opt$original_tree <- paste0(opt$dir, "gubbins.masked.snpsites.fasttree.nwk")
   opt$alignment <- paste0(opt$dir, "gubbins.masked.snpsites.aln")
 }
@@ -124,3 +124,203 @@ func_alignment_length <- function(fastafile) {
   a_length <- alignment[[1]]@length
   return(a_length)
 }
+
+#xxxxxxxxxxxxxxxxx
+# Convert phy
+#xxxxxxxxxxxxxxxx
+# read trees calculated by Nextflow
+func_convert_phy <- function(phy) {
+  
+  # transforms all multichotomies into a series of dichotomies
+  phy %<>% multi2di() %>% 
+    # unroot the tree
+    unroot()
+  
+  # multiply the branch length by the alignment length if alignment file was provided
+  if(!is.null(opt$alignment)) {
+    phy$edge.length <- phy$edge.length * func_alignment_length(opt$alignment)
+  }
+  
+  # name nodes if there are no node labels provided
+  if(anyNA(as.numeric(phy$node.label))) {
+    # Naming nodes
+    phy$node.label <- paste0("N", 1:length(phy$node.label))
+  }
+  
+  return(phy)
+}
+
+#xxxxxxxxxxxxxxxxxx
+# Create tree table, add is.tip column and the minimum number of descendant tips
+#xxxxxxxxxxxxxxxxxx
+
+func_phy_tab <- function(phy) {
+  # create tibble from original_tree
+  phy_tab <- phy %>% 
+    treeio::as_tibble() %>% 
+    # adding a column: is.tip
+    mutate(is.tip = case_when(label %in% original_tree$tip.label ~ "Yes",
+                              TRUE ~ "No"))
+  
+  # list of tip names of all internal nodes (defined with nrs.)
+  clade_members_list <- clade.members.list(phy = phy, 
+                                           tip.labels = TRUE, 
+                                           include.nodes = TRUE) %>% 
+    # converting a list of lists to a simple list
+    list_flatten()
+  
+  # calculate the Nr. of tips for each branch to one direction
+  phy_tab$N1 <- sapply(phy_tab$node, function(x) {
+    index <- which(phy_tab$node == x)
+    # if node is a tip, the number of descendant tips is 1.
+    if (phy_tab$is.tip[index] == "Yes") {
+      return(1) 
+      # else the number of descendant tips is counted from clade_members_list
+    } else {
+      index2 <- which(names(clade_members_list) == paste0(x, "_tips"))
+      if (length(index) == 0) {
+        msg <- paste0(
+          "Failed to count descendant tips for node: ",
+          x
+        )
+        stop(msg)
+      }
+      length(clade_members_list[[index2]])
+    }
+  })
+  
+  # add this 
+  # Based on nr. of tips on ther tree, calculate the nr. of tips to the other direction
+  phy_tab %<>% 
+    mutate(N2 = length(original_tree$tip.label) - N1) %>% 
+    # keep the minimum value 
+    rowwise() %>%
+    mutate(`Nr. of tips` = min(N1, N2))
+  
+  # delete columns
+  phy_tab$N1 <- NULL
+  phy_tab$N2 <- NULL
+  
+  return(phy_tab)
+}
+
+#xxxxxxxxxxxxxxxxxx
+# IQR outlier upper threshold
+#xxxxxxxxxxxxxxxxxx
+
+func_IQR_upper_threshold <- function(phy_tab, col_name) {
+  # Quartiles of R2T distances
+  qtr_vec <- phy_tab %>% 
+    filter(!is.na(!!sym(col_name)) &
+             !!sym(col_name) > 0) %>% 
+    dplyr::select(!!sym(col_name)) %>% 
+    pull() %>% 
+    quantile()
+  # Inter Quartile Range of R2T distances: upper limit Q3 + 3 * (Q3 - Q1) - threshold
+  R2T_threshold <- qtr_vec["75%"] + 3 * (qtr_vec["75%"] - qtr_vec["25%"])
+  names(R2T_threshold) <- NULL
+  return(R2T_threshold)
+}
+
+#xxxxxxxxxxxx
+# Density function for colouring a scatter plot by density
+#xxxxxxxxxxxx
+func_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
+
+
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Inputs ---------------------------------------------------------
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# tree
+original_tree <- read.tree(opt$original_tree) %>% 
+  func_convert_phy()
+
+# tree table containing Nr. of tips
+original_tree_tab <- func_phy_tab(original_tree)
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Thresholds --------------------------------------------------------------
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#xxxxxx
+# * Tips ----
+#xxxxxx
+# Nr. of tips < tipprop or 0.05 of all tips
+if(is.null(opt$tipprop)) {
+  opt$tipprop <- 0.05
+}
+
+nr_tips_threshold <- length(original_tree$tip.label) * opt$tipprop
+
+#xxxxxx
+# * Branch lengths ----
+#xxxxxx
+bl_threshold <- original_tree_tab %>% 
+  func_IQR_upper_threshold(phy_tab = ., 
+                           col_name = "branch.length")
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Pruning -----------------------------------------------------------------
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Excluding all tips having greater R2T distances than the IQR threshold, except the outgroup tip
+pruned_tree <- original_tree_tab %>% 
+  filter(is.tip == "Yes" & 
+           `branch.length` > bl_threshold &
+           label != opt$outgroup) %>% 
+  select(label) %>% 
+  pull() %>% 
+  drop.tip(original_tree, .)
+
+
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Plotting ----------------------------------------------------------------
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#xxxxxx
+# * Scatter plot of branch lengths and number of tips ----
+#xxxxxx
+
+# creating a tree_tab for plotting
+original_tree_tab_plotting <- original_tree_tab %>% 
+  # if branch.length is NA -> 0
+  mutate(branch.length = case_when(is.na(branch.length) ~ 0,
+                                   TRUE ~ branch.length))
+# colour by density
+original_tree_tab_plotting$Density <- func_density(original_tree_tab_plotting$branch.length, 
+                                                  original_tree_tab_plotting$`Nr. of tips`, 
+                                                  n = 100)
+# scatterplot
+original_tree_tab_plotting %>% 
+  ggplot(aes(x = branch.length, y = `Nr. of tips`,
+             color = Density)) +
+  geom_point() +
+  viridis::scale_color_viridis(option = "turbo") +
+  xlab("Branch length") +
+  # add branchlength threshold
+  geom_vline(aes(xintercept = bl_threshold, 
+                 linetype = "Branch length outliers\nto the right"), 
+             color = "darkred") +
+  # add nr. of tips threshold
+  geom_hline(aes(yintercept = nr_tips_threshold, 
+                 linetype = paste0("Nodes with less than ", opt$tipprop*100, "%\nof the tips are below")),
+             color = "darkgreen") +
+  # legend for lines
+  scale_linetype_manual(name = "Outlier detection", values = c(2, 2), 
+                        guide = guide_legend(override.aes = 
+                                               list(color = c("darkred", 
+                                                              "darkgreen")))) +
+  theme_minimal()
+

@@ -70,11 +70,11 @@ library(caper) # clade.members.list at func_nr_of_tips function
 option_list <- list(
   make_option(c("-t", "--original_tree"), 
               type = "character", default = NULL, 
-              help = "input newick original_tree file from which long branches should be excluded", 
+              help = "input newick tree file from which long branches should be excluded", 
               metavar = "character"),
   make_option(c("-a", "--alignment"), 
               type = "character", default = NULL, 
-              help = "sequence alignment used for inferring the original_tree", 
+              help = "sequence alignment used for inferring the tree", 
               metavar = "character"),
   make_option(c("-p", "--tipprop"), 
               type = "double", default = NULL, 

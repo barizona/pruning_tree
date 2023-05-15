@@ -58,11 +58,11 @@
 library(optparse) # named arguments
 library(tidyverse)
 library(magrittr) # %<>% pipe
-library(treeio) # as_tibble
-library(phytools) # midpoint.root
-library(ggtree) # tree plotting
-library(Biostrings) # readDNAStringSet at func_alignment_length function
-library(caper) # clade.members.list at func_nr_of_tips function
+# library(treeio) # as_tibble
+# library(phytools) # midpoint.root
+# library(ggtree) # tree plotting
+# library(Biostrings) # readDNAStringSet at func_alignment_length function
+# library(caper) # clade.members.list at func_nr_of_tips function
 
 #xxxx
 # * Define arguments -----
@@ -115,7 +115,7 @@ unlink(c(".RData",
 #xxxxxxxxxxxxxxxxxx
 # read alignments to get their lengths to multiply fasttree barnchlangths with it (-> SNPs / genome for Bactdate)
 func_alignment_length <- function(fastafile) {
-  alignment <- readDNAStringSet(fastafile, format = "fasta")
+  alignment <- Biostrings::readDNAStringSet(fastafile, format = "fasta")
   # length of the first sequence
   a_length <- alignment[[1]]@length
   return(a_length)
@@ -128,9 +128,9 @@ func_alignment_length <- function(fastafile) {
 func_convert_phy <- function(phy) {
   
   # transforms all multichotomies into a series of dichotomies
-  phy %<>% multi2di() %>% 
+  phy %<>% ape::multi2di() %>% 
     # unroot the tree
-    unroot()
+    ape::unroot()
   
   # multiply the branch length by the alignment length if alignment file was provided
   if(!is.null(opt$alignment)) {
@@ -166,7 +166,7 @@ func_nodenrs_to_nodenames <- function(nodenr_char, phy_tab){
 #xxxxxxxxxxxxxxxxxx
 func_nr_of_tips <- function(phy, phy_tab) {
   # list of tip names of all internal nodes (defined with nrs.)
-  clade_members_list <- clade.members.list(phy = phy, 
+  clade_members_list <- caper::clade.members.list(phy = phy, 
                                            tip.labels = TRUE, 
                                            include.nodes = TRUE) %>% 
     # converting a list of lists to a simple list
@@ -262,8 +262,8 @@ func_R2T <- function(phy, phy_tab) {
   # delete "Root to tip distance" if it is presented in the tab
   phy_tab$`Root to tip distance` <- NULL
   # calculate new "Root to tip distance"
-  phy_tab <- node.depth.edgelength(phy) %>% 
-    as_tibble() %>%
+  phy_tab <- ape::node.depth.edgelength(phy) %>% 
+    treeio::as_tibble() %>%
     dplyr::rename("Root to tip distance" = "value") %>% 
     # add tip and node names
     bind_cols(label = c(phy$tip.label, phy$node.label), .) %>% 
@@ -293,14 +293,14 @@ func_density <- function(x, y, ...) {
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # tree
-original_tree <- read.tree(opt$original_tree) %>% 
+original_tree <- ape::read.tree(opt$original_tree) %>% 
   func_convert_phy()
 
 # tree table containing is.tip column
 tree_tab <- original_tree %>% 
-  as_tibble() %>%
+  treeio::as_tibble() %>%
   # adding a column: is.tip
-  mutate(is.tip = case_when(label %in% original_tree$tip.label ~ "Yes",
+  dplyr::mutate(is.tip = case_when(label %in% original_tree$tip.label ~ "Yes",
                             TRUE ~ "No"))
 
 #xxxxxxx
@@ -319,13 +319,13 @@ tree_tab %<>%
   left_join(., enframe(Nr_tips, name = "label", value = "N1"), 
             by = "label") %>% 
   # add 1 as tip nr. when it is a tip
-  mutate(N1 = case_when(is.na(N1) ~ 1,
+  dplyr::mutate(N1 = case_when(is.na(N1) ~ 1,
                         TRUE ~ N1)) %>% 
   # Based on nr. of tips on the tree, calculate the nr. of tips to the other direction
-  mutate(N2 = length(original_tree$tip.label) - N1) %>%
+  dplyr::mutate(N2 = length(original_tree$tip.label) - N1) %>%
   # keep the minimum value
   rowwise() %>%
-  mutate(`Nr. of tips` = min(N1, N2)) %>% 
+  dplyr::mutate(`Nr. of tips` = min(N1, N2)) %>% 
   dplyr::select(-N1, -N2)
 
 rm(Nr_tips)
@@ -376,7 +376,7 @@ exc_bl <- clade_members_list$tip[exc_bl] %>%
   unique()
 
 # drop these tips to create a shrunken tree
-pruned_tree_bl <- drop.tip(phy = original_tree, tip = exc_bl)
+pruned_tree_bl <- ape::drop.tip(phy = original_tree, tip = exc_bl)
 
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Pruning based on root to tip distances of midpoint rooted tree --------------
@@ -384,13 +384,13 @@ pruned_tree_bl <- drop.tip(phy = original_tree, tip = exc_bl)
 
 # apply midpoint rooting
 pruned_tree_r2t <- pruned_tree_bl %>% 
-  midpoint.root()
+  phytools::midpoint.root()
 
 # create tibble from original_tree
 pruned_tree_tab <- pruned_tree_r2t %>% 
-  as_tibble() %>% 
+  treeio::as_tibble() %>% 
   # adding a column: is.tip
-  mutate(is.tip = case_when(label %in% pruned_tree_r2t$tip.label ~ "Yes",
+  dplyr::mutate(is.tip = case_when(label %in% pruned_tree_r2t$tip.label ~ "Yes",
                             TRUE ~ "No"))
 
 # original R2T distances
@@ -408,13 +408,13 @@ tips2exclude <- pruned_tree_tab %>%
   pull() 
 
 while(length(tips2exclude) > 0) {
-  pruned_tree_r2t  %<>% drop.tip(., tips2exclude[1]) # apply midpoint rooting if outgroup was not provided
-  pruned_tree_r2t %<>% midpoint.root(.)
+  pruned_tree_r2t  %<>% ape::drop.tip(., tips2exclude[1]) # apply midpoint rooting if outgroup was not provided
+  pruned_tree_r2t %<>% phytools::midpoint.root(.)
   # create tibble from original_tree
   pruned_tree_tab <- pruned_tree_r2t %>% 
-    as_tibble() %>% 
+    treeio::as_tibble() %>% 
     # adding a column: is.tip
-    mutate(is.tip = case_when(label %in% pruned_tree_r2t$tip.label ~ "Yes",
+    dplyr::mutate(is.tip = case_when(label %in% pruned_tree_r2t$tip.label ~ "Yes",
                               TRUE ~ "No"))
   # R2T distance
   pruned_tree_tab %<>% func_R2T(phy = pruned_tree_r2t, phy_tab = .)
@@ -430,10 +430,10 @@ while(length(tips2exclude) > 0) {
 
 # unroot tree
 pruned_tree_r2t %<>%
-  unroot()
+  ape::unroot()
 
 # write pruned tree
-pruned_tree_r2t %>% write.tree("pruned.nwk")
+pruned_tree_r2t %>% ape::write.tree("pruned.nwk")
 
 #xxxxxxxx
 # * Create Excluded columns to tree tab for plotting ----
@@ -457,12 +457,12 @@ exc_r2t <- clade_members_list$tip[exc_r2t] %>%
 
 # Add a new columns to tree_tab to define which tips & nodes were excluded
 tree_tab %<>% 
-  mutate(Excluded = case_when(label %in% c(exc_bl, exc_r2t) ~ "Yes",
+  dplyr::mutate(Excluded = case_when(label %in% c(exc_bl, exc_r2t) ~ "Yes",
                               TRUE ~ "No")) %>% 
-  mutate(`Excluded tip` = case_when(is.tip == "Yes" &Excluded == "Yes"  ~ "Yes",
+  dplyr::mutate(`Excluded tip` = case_when(is.tip == "Yes" &Excluded == "Yes"  ~ "Yes",
                                     TRUE ~ "No")) %>% 
   # as factor
-  mutate(`Excluded tip` = factor(`Excluded tip`, levels = c("Yes", "No")))
+  dplyr::mutate(`Excluded tip` = factor(`Excluded tip`, levels = c("Yes", "No")))
 
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Plotting ----------------------------------------------------------------
@@ -475,7 +475,7 @@ tree_tab %<>%
 # creating a tree_tab for plotting
 tree_tab_plotting <- tree_tab %>% 
   # if branch.length is NA -> 0
-  mutate(branch.length = case_when(is.na(branch.length) ~ 0,
+  dplyr::mutate(branch.length = case_when(is.na(branch.length) ~ 0,
                                    TRUE ~ branch.length))
 # colour by density
 tree_tab_plotting$Density <- func_density(tree_tab_plotting$branch.length, 
@@ -533,11 +533,11 @@ ggsave(plot = p, filename = "branch_length_distribution.pdf",
 #xxxxxx
 # it looses the branchlength when starting from tree_tab (??????????)
 p <- original_tree %>%
-  as_tibble() %>%
-  mutate(Excluded = case_when(label %in% c(exc_bl, exc_r2t) ~ "Yes",
+  treeio::as_tibble() %>%
+  dplyr::mutate(Excluded = case_when(label %in% c(exc_bl, exc_r2t) ~ "Yes",
                               TRUE ~ "No")) %>% 
-  as.treedata() %>% 
-  ggtree(aes(color = Excluded), 
+  treeio::as.treedata() %>% 
+  ggtree::ggtree(aes(color = Excluded), 
          layout = "equal_angle",
          size = 0.5) +
   scale_color_manual(values = c("Yes" = "firebrick1", "No" = "black")) +
@@ -553,7 +553,7 @@ ggsave(plot = p, filename = "original_vs_pruned_tree.pdf",
 #xxxxxxxxxxxxxxxxxxxxxxxx
 # * Comparing the original and the pruned tree ----
 #xxxxxxxxxxxxxxxxxxxxxxxx
-capture.output(comparePhylo(original_tree, pruned_tree_r2t), sessionInfo()) %>% 
+capture.output(ape::comparePhylo(original_tree, pruned_tree_r2t), sessionInfo()) %>% 
   writeLines(., "tree_pruning.log")
 
 quit(save = "yes")

@@ -1,0 +1,35 @@
+=> Comparing original_tree with pruned_tree_r2t.
+Trees have different numbers of tips: 691 and 667.
+Tips in original_tree not in pruned_tree_r2t : Coli_007675, Coli_007697, Coli_007801, Coli_007792, Coli_007800, Coli_003258, Coli_012269, Coli_005719, Coli_006811, Coli_006812, Coli_006814, Coli_011042, Coli_006749, Coli_006750, Coli_007927, Coli_007644, Coli_009275, Coli_006650, Coli_006692, Coli_014546, Coli_003393, Coli_005715, Coli_006539, Coli_019714.
+Trees have different numbers of nodes: 689 and 665.
+Both trees are unrooted.
+Both trees are not ultrametric.
+
+R version 4.2.1 (2022-06-23)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 22.04.2 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.10.0
+LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.10.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=hu_HU.UTF-8        LC_COLLATE=en_US.UTF-8     LC_MONETARY=hu_HU.UTF-8    LC_MESSAGES=en_US.UTF-8    LC_PAPER=hu_HU.UTF-8       LC_NAME=C                  LC_ADDRESS=C              
+[10] LC_TELEPHONE=C             LC_MEASUREMENT=hu_HU.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] magrittr_2.0.3  lubridate_1.9.2 forcats_1.0.0   stringr_1.5.0   dplyr_1.1.1     purrr_1.0.1     readr_2.1.4     tidyr_1.3.0     tibble_3.2.1    ggplot2_3.4.1   tidyverse_2.0.0 optparse_1.7.3 
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-162            bitops_1.0-7            ggtree_3.7.1.003        doParallel_1.0.17       GenomeInfoDb_1.34.9     numDeriv_2016.8-1.1     tools_4.2.1             utf8_1.2.3              R6_2.5.1                lazyeval_0.2.2         
+[11] BiocGenerics_0.44.0     colorspace_2.1-0        withr_2.5.0             tidyselect_1.2.0        gridExtra_2.3           mnormt_2.1.1            phangorn_2.11.1         compiler_4.2.1          textshaping_0.3.6       cli_3.6.1              
+[21] expm_0.999-7            labeling_0.4.2          scales_1.2.1            mvtnorm_1.1-3           quadprog_1.5-8          systemfonts_1.0.4       digest_0.6.31           yulab.utils_0.0.6       XVector_0.38.0          pkgconfig_2.0.3        
+[31] plotrix_3.8-2           maps_3.4.1              rlang_1.1.0             rstudioapi_0.14         optimParallel_1.0-2     gridGraphics_0.5-1      generics_0.1.3          farver_2.1.1            combinat_0.0-8          jsonlite_1.8.4         
+[41] RCurl_1.98-1.12         ggplotify_0.1.0         GenomeInfoDbData_1.2.9  patchwork_1.1.2         Matrix_1.5-3            Rcpp_1.0.10             munsell_0.5.0           S4Vectors_0.36.2        fansi_1.0.4             ape_5.7-1              
+[51] viridis_0.6.2           lifecycle_1.0.3         scatterplot3d_0.3-43    stringi_1.7.12          clusterGeneration_1.3.7 MASS_7.3-58.3           zlibbioc_1.44.0         grid_4.2.1              parallel_4.2.1          crayon_1.5.2           
+[61] lattice_0.20-45         Biostrings_2.66.0       hms_1.1.3               pillar_1.9.0            igraph_1.4.1            caper_1.0.1             codetools_0.2-19        stats4_4.2.1            fastmatch_1.1-3         glue_1.6.2             
+[71] ggfun_0.0.9             vctrs_0.6.1             treeio_1.23.1           tzdb_0.3.0              foreach_1.5.2           gtable_0.3.3            getopt_1.20.3           phytools_1.5-1          tidytree_0.4.2          coda_0.19-4            
+[81] ragg_1.2.5              viridisLite_0.4.1       iterators_1.0.14        aplot_0.1.10            IRanges_2.32.0          timechange_0.2.0       

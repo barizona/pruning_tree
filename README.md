@@ -9,6 +9,8 @@ undetected recombinant parts -- from a phylogenetic tree.
 ```         
 Rscript pruning_tree.R --original_tree tree.nwk
 ```
+## Required R packages
+optparse, tidyverse, magrittr, ape, caper, treeio, MASS, phytools, viridis, ggtree
 
 ## Inputs and outputs
 

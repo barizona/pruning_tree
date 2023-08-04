@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # IQR Tree Pruner
 
 The aim of the *R* script is to exclude extremely long branches --

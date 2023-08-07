@@ -9,6 +9,8 @@ undetected recombinant parts -- from a phylogenetic tree.
 ```         
 Rscript pruning_tree.R --original_tree tree.nwk
 ```
+## Required R packages
+optparse, tidyverse, magrittr, ape, caper, treeio, MASS, phytools, viridis, ggtree
 
 ## Inputs and outputs
 
@@ -23,20 +25,20 @@ Rscript pruning_tree.R --original_tree tree.nwk
 
 ### Outputs files
 
--   [pruned.nwk]{.underline}: the pruned NEWICK tree file
+-   **pruned.nwk**: the pruned NEWICK tree file
 
--   [branch_length_nr_of_tips.png]{.underline} & [pdf]{.underline}: a
+-   **branch_length_nr_of_tips.png** & **pdf**: a
     scatter plot of branch lengths and number of tips with the IQR upper
     fence and the proportion of tips gave by the `--tipprop` argument
 
--   [branch_length_distribution.png]{.underline} & [pdf]{.underline}: a
+-   **branch_length_distribution.png** & **pdf**: a
     histogram of branch lengths indicating the count of included and
     excluded tips
 
--   [original_vs_pruned_tree.png]{.underline} & [pdf]{.underline}: a
+-   **original_vs_pruned_tree.png** & **pdf**: a
     tree plot indicating the pruned tip branches
 
--   [tree_pruning.log]{.underline}: a text file containing the summary
+-   **tree_pruning.log**: a text file containing the summary
     comparison of the original tree and the pruned tree.
 
 ## The IQR pruning algorithm
